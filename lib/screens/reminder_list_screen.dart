@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import '../models/reminder.dart';
@@ -58,9 +56,7 @@ class _ReminderListScreenState extends State<ReminderListScreen>
   }
 
   Future<void> _openNotificationSettings() async {
-    await Process.run('open', [
-      'x-apple.systempreferences:com.apple.preference.notifications',
-    ]);
+    await NotificationService.openSystemSettings();
   }
 
   Future<void> _addReminder() async {

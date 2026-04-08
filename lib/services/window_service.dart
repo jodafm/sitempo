@@ -1,9 +1,2 @@
-import 'package:flutter/services.dart';
-
-class WindowService {
-  static const _channel = MethodChannel('com.sitempo/statusbar');
-
-  static Future<void> bringToFront() async {
-    await _channel.invokeMethod('bringToFront');
-  }
-}
+export 'platform/window_service_native.dart'
+    if (dart.library.js_interop) 'platform/window_service_web.dart';

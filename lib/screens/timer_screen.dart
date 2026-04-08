@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 import '../models/activity.dart';
 import '../models/reminder.dart';
@@ -167,8 +167,7 @@ class _TimerScreenState extends State<TimerScreen>
   }
 
   void _playTransitionSound() {
-    final path = AlarmService.resolveSoundPath(_routine.transitionSound);
-    Process.run('afplay', [path]);
+    AlarmService.playSoundByName(_routine.transitionSound);
   }
 
   void _startLoopingTransitionSound() {
@@ -1110,12 +1109,11 @@ class _TimerScreenState extends State<TimerScreen>
         'event': event,
         'timestamp': DateTime.now().toIso8601String(),
       });
-      final client = HttpClient();
-      final request = await client.postUrl(uri);
-      request.headers.set('Content-Type', 'application/json; charset=utf-8');
-      request.add(utf8.encode(body));
-      final response = await request.close();
-      client.close();
+      final response = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json; charset=utf-8'},
+        body: body,
+      );
       if (mounted) {
         final ok = response.statusCode >= 200 && response.statusCode < 300;
         setState(() {
