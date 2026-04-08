@@ -515,10 +515,11 @@ class _ReminderEditorDialogState extends State<ReminderEditorDialog> {
                   fontSize: 13,
                 )),
           ),
-          GestureDetector(
-            onTap: () => AlarmService.playPreview(sound),
-            child:
-                const Icon(Icons.play_arrow, size: 16, color: Colors.white24),
+          IconButton(
+            onPressed: () => AlarmService.playPreview(sound),
+            icon: const Icon(Icons.play_arrow, size: 16, color: Colors.white24),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
           ),
         ],
       ),
