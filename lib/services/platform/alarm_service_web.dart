@@ -8,9 +8,9 @@ class AlarmService {
   ];
 
   static const _soundMap = {
-    'Glass.aiff': 'assets/sounds/glass.wav',
-    'Hero.aiff': 'assets/sounds/hero.wav',
-    'Sosumi.aiff': 'assets/sounds/sosumi.wav',
+    'Glass.aiff': 'sounds/glass.m4a',
+    'Hero.aiff': 'sounds/hero.m4a',
+    'Sosumi.aiff': 'sounds/sosumi.m4a',
   };
 
   // Separate players for looping alarm vs notification alert

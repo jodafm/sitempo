@@ -24,16 +24,16 @@ void main() {
     });
 
     // Path resolution for system sounds
-    test('resolveSoundPath maps Glass.aiff to assets/sounds/glass.wav', () {
-      expect(AlarmService.resolveSoundPath('Glass.aiff'), 'assets/sounds/glass.wav');
+    test('resolveSoundPath maps Glass.aiff to sounds/glass.m4a', () {
+      expect(AlarmService.resolveSoundPath('Glass.aiff'), 'sounds/glass.m4a');
     });
 
-    test('resolveSoundPath maps Hero.aiff to assets/sounds/hero.wav', () {
-      expect(AlarmService.resolveSoundPath('Hero.aiff'), 'assets/sounds/hero.wav');
+    test('resolveSoundPath maps Hero.aiff to sounds/hero.m4a', () {
+      expect(AlarmService.resolveSoundPath('Hero.aiff'), 'sounds/hero.m4a');
     });
 
-    test('resolveSoundPath maps Sosumi.aiff to assets/sounds/sosumi.wav', () {
-      expect(AlarmService.resolveSoundPath('Sosumi.aiff'), 'assets/sounds/sosumi.wav');
+    test('resolveSoundPath maps Sosumi.aiff to sounds/sosumi.m4a', () {
+      expect(AlarmService.resolveSoundPath('Sosumi.aiff'), 'sounds/sosumi.m4a');
     });
 
     // Custom sounds fall back to the sound name itself
