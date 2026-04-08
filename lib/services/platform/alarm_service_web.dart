@@ -1,4 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:web/web.dart' as web;
 
 class AlarmService {
   static const systemSounds = [
@@ -13,7 +14,9 @@ class AlarmService {
     'Sosumi.aiff': 'sounds/sosumi.m4a',
   };
 
-  // Separate players for looping alarm vs notification alert
+  // Custom sounds stored as blob URLs in memory
+  static final Map<String, String> _customSoundUrls = {};
+
   static AudioPlayer? _loopPlayer;
   static AudioPlayer? _notifPlayer;
 
@@ -21,30 +24,54 @@ class AlarmService {
     return _soundMap[sound] ?? sound;
   }
 
-  static Future<void> ensureSoundsDir() async {
-    // No-op on web — no filesystem access
-  }
+  static Future<void> ensureSoundsDir() async {}
 
   static Future<List<String>> loadCustomSounds() async {
-    // No filesystem on web
-    return [];
+    return _customSoundUrls.keys.toList();
   }
 
   static Future<String?> importSound() async {
-    // File picker / copy not supported on web
-    return null;
+    final input = web.HTMLInputElement()
+      ..type = 'file'
+      ..accept = 'audio/*';
+
+    input.click();
+
+    // Wait for file selection
+    final completer = _FileCompleter();
+    input.onChange.listen((_) {
+      final files = input.files;
+      if (files != null && files.length > 0) {
+        final file = files.item(0)!;
+        final url = web.URL.createObjectURL(file);
+        final name = file.name;
+        _customSoundUrls[name] = url;
+        completer.complete(name);
+      } else {
+        completer.complete(null);
+      }
+    });
+
+    return completer.future;
+  }
+
+  static Source _sourceFor(String sound) {
+    // Check custom sounds first (blob URLs)
+    final blobUrl = _customSoundUrls[sound];
+    if (blobUrl != null) return UrlSource(blobUrl);
+    // System sound → bundled asset
+    return AssetSource(resolveSoundPath(sound));
   }
 
   static Future<void> playSoundByName(String sound) async {
     final player = AudioPlayer();
-    await player.play(AssetSource(resolveSoundPath(sound)));
+    await player.play(_sourceFor(sound));
     player.onPlayerComplete.listen((_) => player.dispose());
   }
 
   static Future<void> playPreview(String sound) async {
     final player = AudioPlayer();
-    await player.play(AssetSource(resolveSoundPath(sound)));
-    // Dispose after playback completes
+    await player.play(_sourceFor(sound));
     player.onPlayerComplete.listen((_) => player.dispose());
   }
 
@@ -61,14 +88,14 @@ class AlarmService {
   }
 
   static Future<void> startLoopingAlarm() async {
-    await startLoopingAlarmWithPath(_soundMap['Sosumi.aiff']!);
+    await startLoopingAlarmWithPath('Sosumi.aiff');
   }
 
   static Future<void> startLoopingAlarmWithPath(String path) async {
     await stopLoopingAlarm();
     _loopPlayer = AudioPlayer();
     await _loopPlayer!.setReleaseMode(ReleaseMode.loop);
-    await _loopPlayer!.play(AssetSource(path));
+    await _loopPlayer!.play(_sourceFor(path));
   }
 
   static Future<void> stopLoopingAlarm() async {
@@ -86,14 +113,14 @@ class AlarmService {
     await stopNotificationAlert();
     if (count <= 0) return;
     _notifPlayer = AudioPlayer();
-    final path = resolveSoundPath(sound);
+    final source = _sourceFor(sound);
     int played = 0;
-    await _notifPlayer!.play(AssetSource(path));
+    await _notifPlayer!.play(source);
     played++;
     _notifPlayer!.onPlayerComplete.listen((_) async {
       if (_notifPlayer != null && played < count) {
         played++;
-        await _notifPlayer!.play(AssetSource(path));
+        await _notifPlayer!.play(source);
       } else {
         await stopNotificationAlert();
       }
@@ -108,10 +135,29 @@ class AlarmService {
     }
   }
 
-  /// Call this from the first user interaction (button tap, etc.) to unlock
-  /// the Web AudioContext — required by browsers before audio can play.
-  /// Placeholder: wire to js_interop AudioContext.resume() if needed.
-  static void markUserGesture() {
-    // No-op placeholder — extend when js_interop AudioContext.resume() is wired
+  static void markUserGesture() {}
+}
+
+/// Simple completer wrapper to avoid importing dart:async complexity
+class _FileCompleter {
+  String? _result;
+  bool _done = false;
+  final List<void Function()> _callbacks = [];
+
+  void complete(String? value) {
+    _result = value;
+    _done = true;
+    for (final cb in _callbacks) {
+      cb();
+    }
+  }
+
+  Future<String?> get future async {
+    if (_done) return _result;
+    await Future.doWhile(() async {
+      await Future.delayed(const Duration(milliseconds: 100));
+      return !_done;
+    });
+    return _result;
   }
 }
