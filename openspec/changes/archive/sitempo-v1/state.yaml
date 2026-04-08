@@ -1,0 +1,9 @@
+change: sitempo-v1
+status: archived
+archived_at: "2026-04-07"
+phases_completed:
+  - proposal
+  - spec
+  - design
+  - tasks
+notes: "Retroactive documentation of v1.0.0 release. All 27 tasks completed."
