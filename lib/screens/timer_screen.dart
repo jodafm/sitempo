@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -1101,25 +1102,47 @@ class _TimerScreenState extends State<TimerScreen>
 
   Future<void> _fireWebhook(Reminder reminder, String event, AppNotification notif) async {
     try {
-      final uri = Uri.parse(reminder.webhookUrl!);
-      final body = jsonEncode({
+      final payload = {
         'task': reminder.label,
         'emoji': reminder.emoji,
         'id': reminder.id,
         'event': event,
         'timestamp': DateTime.now().toIso8601String(),
-      });
-      final response = await http.post(
-        uri,
-        headers: {'Content-Type': 'application/json; charset=utf-8'},
-        body: body,
-      );
-      if (mounted) {
-        final ok = response.statusCode >= 200 && response.statusCode < 300;
-        setState(() {
-          notif.webhookStatus = ok ? WebhookStatus.success : WebhookStatus.error;
-          notif.webhookDetail = '${response.statusCode}';
-        });
+      };
+
+      late final http.Response response;
+
+      if (kIsWeb) {
+        // Use proxy to avoid CORS preflight
+        response = await http.post(
+          Uri.parse('/api/webhook'),
+          headers: {'Content-Type': 'application/json; charset=utf-8'},
+          body: jsonEncode({...payload, 'url': reminder.webhookUrl}),
+        );
+        // Parse proxied response
+        if (mounted) {
+          final proxyBody = jsonDecode(response.body);
+          final status = proxyBody['status'] as int? ?? response.statusCode;
+          final ok = status >= 200 && status < 300;
+          setState(() {
+            notif.webhookStatus = ok ? WebhookStatus.success : WebhookStatus.error;
+            notif.webhookDetail = '$status';
+          });
+        }
+      } else {
+        // Native — direct call
+        response = await http.post(
+          Uri.parse(reminder.webhookUrl!),
+          headers: {'Content-Type': 'application/json; charset=utf-8'},
+          body: jsonEncode(payload),
+        );
+        if (mounted) {
+          final ok = response.statusCode >= 200 && response.statusCode < 300;
+          setState(() {
+            notif.webhookStatus = ok ? WebhookStatus.success : WebhookStatus.error;
+            notif.webhookDetail = '${response.statusCode}';
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
